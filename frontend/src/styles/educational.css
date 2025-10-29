@@ -1,0 +1,410 @@
+/* Step-by-Step Viewer Styles */
+.step-viewer {
+  margin-top: 2rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 2rem;
+}
+
+.step-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.step-counter {
+  background: #667eea;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: bold;
+}
+
+.step-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.speed-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  justify-content: center;
+}
+
+.speed-control select {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.step-content {
+  min-height: 300px;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.step-description h4 {
+  color: #667eea;
+  margin-bottom: 0.5rem;
+}
+
+.step-description p {
+  color: #666;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.step-process {
+  background: rgba(102, 126, 234, 0.1);
+  padding: 0.75rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  border-left: 4px solid #667eea;
+}
+
+.work-comparison {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1rem 0;
+  flex-wrap: wrap;
+}
+
+.work-before,
+.work-after {
+  flex: 1;
+  min-width: 150px;
+}
+
+.work-before h5,
+.work-after h5 {
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.arrow {
+  font-size: 1.5rem;
+  color: #667eea;
+  font-weight: bold;
+}
+
+.resource-array {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.resource-value {
+  background: #2196F3;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.step-need {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background: rgba(255, 193, 7, 0.1);
+  border-radius: 8px;
+  border-left: 4px solid #FFC107;
+}
+
+.step-finish {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background: rgba(76, 175, 80, 0.1);
+  border-radius: 8px;
+  border-left: 4px solid #4CAF50;
+}
+
+.finish-array {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.process-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.process-status.finished {
+  background: #4CAF50;
+  color: white;
+}
+
+.process-status.waiting {
+  background: #FF9800;
+  color: white;
+}
+
+.step-sequence {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background: rgba(76, 175, 80, 0.1);
+  border-radius: 8px;
+  border-left: 4px solid #4CAF50;
+}
+
+.step-deadlock {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background: rgba(244, 67, 54, 0.1);
+  border-radius: 8px;
+  border-left: 4px solid #F44336;
+}
+
+.deadlock-processes {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.deadlock-process {
+  background: #F44336;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.step-progress {
+  margin-top: 1.5rem;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+/* Concept Explainer Styles */
+.concept-explainer {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.concept-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.concept-tab {
+  padding: 0.75rem 1rem;
+  border: 2px solid #e0e0e0;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.concept-tab:hover {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.concept-tab.active {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.concept-content {
+  min-height: 400px;
+}
+
+.concept-content h3 {
+  color: #667eea;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.concept-definition {
+  background: rgba(102, 126, 234, 0.1);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #667eea;
+}
+
+.concept-definition h4 {
+  color: #667eea;
+  margin-bottom: 0.5rem;
+}
+
+.concept-definition p {
+  color: #333;
+  line-height: 1.6;
+  font-size: 1.1rem;
+}
+
+.concept-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+}
+
+.concept-section h4 {
+  color: #333;
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+}
+
+.concept-section ul,
+.concept-section ol {
+  margin-left: 1.5rem;
+  color: #666;
+}
+
+.concept-section li {
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+.pros-cons-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.pros,
+.cons {
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.pros {
+  background: rgba(76, 175, 80, 0.1);
+  border-left: 4px solid #4CAF50;
+}
+
+.cons {
+  background: rgba(244, 67, 54, 0.1);
+  border-left: 4px solid #F44336;
+}
+
+.pros h4 {
+  color: #4CAF50;
+  margin-bottom: 0.75rem;
+}
+
+.cons h4 {
+  color: #F44336;
+  margin-bottom: 0.75rem;
+}
+
+.pros ul,
+.cons ul {
+  margin-left: 1rem;
+}
+
+.concept-example {
+  background: rgba(255, 193, 7, 0.1);
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  border-left: 4px solid #FFC107;
+}
+
+.concept-example h4 {
+  color: #FF8F00;
+  margin-bottom: 0.5rem;
+}
+
+.concept-analogy {
+  background: rgba(156, 39, 176, 0.1);
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  border-left: 4px solid #9C27B0;
+}
+
+.concept-analogy h4 {
+  color: #9C27B0;
+  margin-bottom: 0.5rem;
+}
+
+/* Responsive Design for Educational Components */
+@media (max-width: 1024px) {
+  .work-comparison {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .arrow {
+    transform: rotate(90deg);
+    align-self: center;
+  }
+  
+  .pros-cons-section {
+    grid-template-columns: 1fr;
+  }
+  
+  .concept-tabs {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .step-controls {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .concept-tab {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .resource-array,
+  .finish-array,
+  .deadlock-processes {
+    justify-content: center;
+  }
+  
+  .step-content {
+    padding: 1rem;
+  }
+}

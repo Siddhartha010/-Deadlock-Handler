@@ -1,0 +1,36 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+
+# Node / React
+frontend/node_modules/
+frontend/.env
+frontend/.env.local
+frontend/.cache/
+frontend/build/
+frontend/dist/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# Python / Flask
+__pycache__/
+*.pyc
+.pytest_cache/
+backend/.env
+backend/venv/
+backend/.venv/
+backend/*.log
+
+# Reports / artifacts
+backend/reports/*.pdf
+reports/
+
+# Misc
+coverage/
+.coverage
+.cache/
+tmp/
