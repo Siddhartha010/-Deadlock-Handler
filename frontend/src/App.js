@@ -4,6 +4,7 @@ import Header from './components/Header';
 import Home from './pages/Home';
 import Simulation from './pages/Simulation';
 import RealTimeSystem from './pages/RealTimeSystem';
+import SystemMonitor from './pages/SystemMonitor';
 import Dashboard from './pages/Dashboard';
 import './styles/App.css';
 
@@ -17,6 +18,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/simulation" element={<Simulation />} />
             <Route path="/realtime" element={<RealTimeSystem />} />
+            <Route path="/monitor" element={<SystemMonitor />} />
             <Route path="/dashboard" element={<Dashboard />} />
           </Routes>
         </main>

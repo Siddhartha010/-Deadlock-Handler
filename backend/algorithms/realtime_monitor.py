@@ -83,10 +83,7 @@ class RealTimeDeadlockMonitor:
             self.performance_metrics['requests_processed'] += 1
             return True, f"Resource {resource['name']} granted to {process['name']}"
         else:
-            # Process must wait - check for potential deadlock before adding to queue
-            if self._would_cause_deadlock(process_id, resource_id):
-                return False, f"Request denied - would cause deadlock"
-                
+            # Process must wait
             process['waiting_for'].add(resource_id)
             self.request_matrix[process_id][resource_id] = 1
             

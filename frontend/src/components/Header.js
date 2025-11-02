@@ -9,6 +9,7 @@ const Header = () => {
     { path: '/', label: 'Home', icon: '🏠' },
     { path: '/simulation', label: 'Algorithm Simulation', icon: '⚙️' },
     { path: '/realtime', label: 'Real-Time System', icon: '🖥️' },
+    { path: '/monitor', label: 'System Monitor', icon: '📡' },
     { path: '/dashboard', label: 'Analysis Dashboard', icon: '📊' }
   ];
 

@@ -67,8 +67,8 @@
 
 .simulator-content {
   display: grid;
-  grid-template-columns: 1fr 1fr 300px;
-  gap: 2rem;
+  grid-template-columns: 1fr 1fr 350px;
+  gap: 1.5rem;
 }
 
 /* Process Panel Styles */
@@ -80,12 +80,17 @@
   font-size: 1.2rem;
 }
 
+.processes-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
 .process-card {
   background: rgba(255, 255, 255, 0.8);
   border: 2px solid #e0e0e0;
   border-radius: 12px;
   padding: 1rem;
-  margin-bottom: 1rem;
   transition: all 0.3s ease;
 }
 
@@ -135,19 +140,17 @@
   gap: 0.5rem;
 }
 
-.held-resources,
-.waiting-resources {
+.resource-row {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
 }
 
-.held-resources strong,
-.waiting-resources strong {
+.resource-row strong {
   color: #666;
   font-size: 0.9rem;
-  min-width: 60px;
+  min-width: 70px;
 }
 
 .resource-tag {
@@ -351,8 +354,6 @@
     justify-content: center;
   }
   
-  .held-resources,
-  .waiting-resources,
   .resource-holders {
     flex-direction: column;
     align-items: flex-start;

@@ -1,0 +1,93 @@
+.system-monitor {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.monitor-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.monitor-header h1 {
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.deadlock-alert {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+  color: white;
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.monitor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.processes-section, .resources-section {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.processes-table .table-header,
+.processes-table .table-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 80px 100px 80px;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.processes-table .table-header {
+  font-weight: bold;
+  background: #f5f5f5;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.status.running {
+  color: #4caf50;
+  font-weight: bold;
+}
+
+.resource-item {
+  margin-bottom: 15px;
+}
+
+.resource-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.resource-bar {
+  height: 20px;
+  background: #eee;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.resource-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .monitor-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .processes-table .table-header,
+  .processes-table .table-row {
+    grid-template-columns: 60px 1fr 60px 80px 60px;
+    font-size: 14px;
+  }
+}

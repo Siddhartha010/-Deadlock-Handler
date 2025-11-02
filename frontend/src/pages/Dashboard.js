@@ -14,6 +14,22 @@ const Dashboard = () => {
   
   useEffect(() => {
     loadCompletedSimulations();
+    
+    // Refresh data when window gains focus or becomes visible
+    const handleFocus = () => loadCompletedSimulations();
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadCompletedSimulations();
+      }
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
   
   const loadCompletedSimulations = () => {
@@ -56,6 +72,11 @@ const Dashboard = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+  
+  const clearAllSimulations = () => {
+    localStorage.removeItem('completedSimulations');
+    setRealtimeHistory([]);
   };
 
   const strategyDetails = {
@@ -196,7 +217,17 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <h3>Completed Simulations</h3>
+          <div className="section-header">
+            <h3>Completed Simulations</h3>
+            {realtimeHistory.length > 0 && (
+              <button 
+                className="btn btn-danger btn-small"
+                onClick={clearAllSimulations}
+              >
+                🗑️ Clear All
+              </button>
+            )}
+          </div>
           <div className="history-table">
             <div className="table-header">
               <span>Type</span>

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { initRealTimeSystem, requestResourceRT, releaseResourceRT, getRealTimeStatus, autoResolveDeadlock, getPerformanceMetrics, getFullSimulationLog } from '../utils/realtimeApi';
 import PerformancePanel from './PerformancePanel';
+import DeadlockChatbot from './DeadlockChatbot';
+import '../styles/DeadlockChatbot.css';
 
 const RealTimeSystemSimulator = () => {
   const [systemState, setSystemState] = useState({
@@ -22,6 +24,7 @@ const RealTimeSystemSimulator = () => {
   const [currentTime, setCurrentTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [deadlockDetected, setDeadlockDetected] = useState(false);
+  const [deadlockState, setDeadlockState] = useState({ deadlocked: false, processes: [] });
   const [systemLog, setSystemLog] = useState([]);
   const [performanceMetrics, setPerformanceMetrics] = useState({
     requests_processed: 0,
@@ -30,6 +33,26 @@ const RealTimeSystemSimulator = () => {
     throughput: 0
   });
   const [autoResolve, setAutoResolve] = useState(true);
+  const [lastDeadlockCycle, setLastDeadlockCycle] = useState(null);
+  
+  const playWarningSound = () => {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+    oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+    oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.3);
+  };
 
   useEffect(() => {
     // Initialize real-time system on component mount
@@ -58,21 +81,74 @@ const RealTimeSystemSimulator = () => {
   useEffect(() => {
     let interval;
     if (isRunning) {
-      interval = setInterval(() => {
+      interval = setInterval(async () => {
         setCurrentTime(prev => prev + 1);
-        simulateSystemActivity();
+        await simulateSystemActivity();
+        if (Math.random() < 0.7) {
+          await simulateSystemActivity();
+        }
         updatePerformanceMetrics();
-      }, 500); // Faster updates for better responsiveness
+      }, 300);
+    } else {
+      if (interval) {
+        clearInterval(interval);
+      }
     }
-    return () => clearInterval(interval);
-  }, [isRunning]);
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isRunning, systemState]);
   
-  const updatePerformanceMetrics = async () => {
+  const checkForDeadlock = async () => {
     try {
-      const response = await getPerformanceMetrics();
-      setPerformanceMetrics(response.data);
+      // Get status from backend to check for deadlocks
+      const response = await getRealTimeStatus();
+      const { has_deadlock, deadlock_cycle, system_state } = response.data;
+      
+      if (has_deadlock) {
+        setDeadlockDetected(true);
+        if (deadlock_cycle && deadlock_cycle.length > 0) {
+          const cycleStr = deadlock_cycle.join(' → ');
+          addLog(`DEADLOCK DETECTED: Cycle found: ${cycleStr}`);
+        } else {
+          addLog('DEADLOCK DETECTED: System halted');
+        }
+        setIsRunning(false);
+        updateSystemStateFromBackend(system_state);
+        return true;
+      }
+      
+      // Fallback to client-side detection if backend doesn't detect deadlock
+      const waitingProcesses = systemState.processes.filter(p => p.waiting.length > 0);
+      
+      if (waitingProcesses.length >= 2) {
+        // Check if processes are waiting for resources held by each other
+        for (let i = 0; i < waitingProcesses.length; i++) {
+          for (let j = i + 1; j < waitingProcesses.length; j++) {
+            const p1 = waitingProcesses[i];
+            const p2 = waitingProcesses[j];
+            
+            const p1WantsFromP2 = p1.waiting.some(resId => p2.resources.includes(resId));
+            const p2WantsFromP1 = p2.waiting.some(resId => p1.resources.includes(resId));
+            
+            if (p1WantsFromP2 && p2WantsFromP1) {
+              setDeadlockDetected(true);
+              playWarningSound();
+              setLastDeadlockCycle([`P${p1.id}`, `P${p2.id}`]);
+              addLog(`DEADLOCK DETECTED: P${p1.id} and P${p2.id} in circular wait`);
+              setIsRunning(false);
+              return true;
+            }
+          }
+        }
+      }
+      
+      return false;
     } catch (error) {
-      console.error('Failed to update metrics:', error);
+      console.error('Error checking for deadlock:', error);
+      return false;
     }
   };
   
@@ -85,37 +161,101 @@ const RealTimeSystemSimulator = () => {
         addLog(message);
         updateSystemStateFromBackend(system_state);
         setDeadlockDetected(false);
-        setIsRunning(true);
+      } else {
+        // Fallback: terminate lowest priority process in deadlock
+        const waitingProcesses = systemState.processes.filter(p => p.waiting.length > 0);
+        if (waitingProcesses.length > 0) {
+          const lowestPriority = waitingProcesses.reduce((min, p) => {
+            const priorities = { 'High': 3, 'Medium': 2, 'Low': 1 };
+            return priorities[p.priority] < priorities[min.priority] ? p : min;
+          });
+          
+          // Release all resources from lowest priority process
+          const resourcesToRelease = [...lowestPriority.resources];
+          for (const resId of resourcesToRelease) {
+            await releaseResource(lowestPriority.id, resId);
+          }
+          
+          // Clear waiting requests
+          setSystemState(prev => ({
+            ...prev,
+            processes: prev.processes.map(p => 
+              p.id === lowestPriority.id ? { ...p, waiting: [] } : p
+            )
+          }));
+          
+          addLog(`Auto-resolved: Terminated P${lowestPriority.id} (${lowestPriority.name})`);
+          setDeadlockDetected(false);
+        }
       }
     } catch (error) {
       console.error('Auto-resolve failed:', error);
+      addLog('Auto-resolve failed, trying manual resolution...');
+      
+      // Manual fallback resolution
+      const waitingProcesses = systemState.processes.filter(p => p.waiting.length > 0);
+      if (waitingProcesses.length > 0) {
+        const processToTerminate = waitingProcesses[0];
+        
+        setSystemState(prev => ({
+          ...prev,
+          processes: prev.processes.map(p => 
+            p.id === processToTerminate.id ? { ...p, resources: [], waiting: [] } : p
+          ),
+          resources: prev.resources.map(r => ({
+            ...r,
+            available: r.total - prev.processes.reduce((sum, p) => 
+              p.id !== processToTerminate.id ? sum + p.resources.filter(res => res === r.id).length : sum, 0
+            ),
+            holders: r.holders.filter(h => h !== processToTerminate.id)
+          }))
+        }));
+        
+        addLog(`Manual resolution: Terminated P${processToTerminate.id}`);
+        setDeadlockDetected(false);
+      }
     }
   };
 
-  const simulateSystemActivity = () => {
-    // More intelligent simulation based on process priorities
-    const activeProcesses = systemState.processes.filter(p => p.waiting.length === 0);
-    if (activeProcesses.length === 0) return;
+  const simulateSystemActivity = async () => {
+    const hasDeadlock = await checkForDeadlock();
+    if (hasDeadlock || !isRunning) return;
     
-    // Higher priority processes get more frequent resource requests
-    const weightedProcesses = [];
-    systemState.processes.forEach(p => {
-      const weight = p.priority === 'High' ? 3 : p.priority === 'Medium' ? 2 : 1;
-      for (let i = 0; i < weight; i++) {
-        weightedProcesses.push(p.id);
-      }
-    });
-    
-    const selectedProcess = weightedProcesses[Math.floor(Math.random() * weightedProcesses.length)];
+    const runningProcesses = systemState.processes.filter(p => p.resources.length > 0 && p.waiting.length === 0);
+    const idleProcesses = systemState.processes.filter(p => p.resources.length === 0 && p.waiting.length === 0);
     const availableResources = systemState.resources.filter(r => r.available > 0);
     
-    if (availableResources.length > 0) {
-      const selectedResource = availableResources[Math.floor(Math.random() * availableResources.length)];
-      requestResource(selectedProcess, selectedResource.id);
+    // Auto-start all idle processes when system starts
+    if (runningProcesses.length === 0 && idleProcesses.length > 0 && availableResources.length > 0) {
+      // Start multiple processes simultaneously to increase deadlock probability
+      const processesToStart = Math.min(idleProcesses.length, availableResources.length, 3);
+      
+      for (let i = 0; i < processesToStart; i++) {
+        const process = idleProcesses[i];
+        const resource = availableResources[i % availableResources.length];
+        await requestResource(process.id, resource.id);
+      }
+      return;
     }
     
-    // Occasionally release resources
-    if (Math.random() < 0.3) {
+    // Running processes request additional resources (higher chance for deadlock)
+    if (runningProcesses.length > 0 && Math.random() < 0.8) {
+      const process = runningProcesses[Math.floor(Math.random() * runningProcesses.length)];
+      if (availableResources.length > 0) {
+        const resource = availableResources[Math.floor(Math.random() * availableResources.length)];
+        await requestResource(process.id, resource.id);
+      }
+    }
+    
+    // Start remaining idle processes
+    if (idleProcesses.length > 0 && availableResources.length > 0 && Math.random() < 0.6) {
+      const process = idleProcesses[Math.floor(Math.random() * idleProcesses.length)];
+      const resource = availableResources[Math.floor(Math.random() * availableResources.length)];
+      await requestResource(process.id, resource.id);
+    }
+    
+    // Running processes can release resources (simulating task completion)
+    if (Math.random() < 0.15) {
       const processesWithResources = systemState.processes.filter(p => p.resources.length > 0);
       if (processesWithResources.length > 0) {
         const proc = processesWithResources[Math.floor(Math.random() * processesWithResources.length)];
@@ -128,17 +268,28 @@ const RealTimeSystemSimulator = () => {
   const requestResource = async (processId, resourceId) => {
     try {
       const response = await requestResourceRT(processId, resourceId);
-      const { success, message, has_deadlock, system_state } = response.data;
+      const { success, message, has_deadlock, deadlock_cycle, system_state } = response.data;
       
       addLog(message);
       
       if (has_deadlock) {
         setDeadlockDetected(true);
         setIsRunning(false);
+        playWarningSound();
+        if (deadlock_cycle && deadlock_cycle.length > 0) {
+          const cycleStr = deadlock_cycle.join(' → ');
+          setLastDeadlockCycle(deadlock_cycle);
+          addLog(`DEADLOCK DETECTED: Cycle found: ${cycleStr}`);
+        } else {
+          addLog('DEADLOCK DETECTED: System halted');
+        }
       }
       
       // Update local state from backend
       updateSystemStateFromBackend(system_state);
+      
+      // Always check for deadlock after resource request (even if backend didn't detect it)
+      await checkForDeadlock();
     } catch (error) {
       console.error('Resource request failed:', error);
       addLog('Error: Resource request failed');
@@ -184,28 +335,14 @@ const RealTimeSystemSimulator = () => {
     });
   };
 
-  const checkForDeadlock = () => {
-    // Simple deadlock detection: check for circular wait
-    const waitingProcesses = systemState.processes.filter(p => p.waiting.length > 0);
-    
-    if (waitingProcesses.length >= 2) {
-      // Check if processes are waiting for resources held by each other
-      for (let i = 0; i < waitingProcesses.length; i++) {
-        for (let j = i + 1; j < waitingProcesses.length; j++) {
-          const p1 = waitingProcesses[i];
-          const p2 = waitingProcesses[j];
-          
-          const p1WantsFromP2 = p1.waiting.some(resId => p2.resources.includes(resId));
-          const p2WantsFromP1 = p2.waiting.some(resId => p1.resources.includes(resId));
-          
-          if (p1WantsFromP2 && p2WantsFromP1) {
-            setDeadlockDetected(true);
-            addLog(`DEADLOCK DETECTED: P${p1.id} and P${p2.id} in circular wait`);
-            setIsRunning(false);
-            return;
-          }
-        }
-      }
+  // Function to force a deadlock scenario is defined later in the code
+
+  const updatePerformanceMetrics = async () => {
+    try {
+      const response = await getPerformanceMetrics();
+      setPerformanceMetrics(response.data);
+    } catch (error) {
+      console.error('Failed to update metrics:', error);
     }
   };
 
@@ -256,11 +393,12 @@ const RealTimeSystemSimulator = () => {
 
   const handleStartStop = async () => {
     if (isRunning) {
-      // Stopping: persist session to Completed Simulations
       await saveCurrentSession();
       setIsRunning(false);
+      addLog('System stopped by user');
     } else {
       setIsRunning(true);
+      addLog('System started');
     }
   };
 
@@ -307,6 +445,52 @@ const RealTimeSystemSimulator = () => {
     }
   };
 
+
+  const forceDeadlock = () => {
+    // Reset any existing deadlock state
+    setDeadlockDetected(false);
+    setIsRunning(false);
+    
+    // Create a clean state to work with
+    const updatedState = {...systemState};
+    
+    // First clear any existing allocations
+    updatedState.processes.forEach(p => {
+      p.resources = [];
+      p.waiting = [];
+    });
+    
+    updatedState.resources.forEach(r => {
+      r.available = r.total;
+      r.holders = [];
+    });
+    
+    // Set up the deadlock scenario
+    // P0 holds Disk Drive (R2)
+    updatedState.processes[0].resources = [2];
+    updatedState.resources[2].available = 0;
+    updatedState.resources[2].holders = [0];
+    
+    // P1 holds Network Port (R3)
+    updatedState.processes[1].resources = [3];
+    updatedState.resources[3].available = 1; // There are 2 total, so 1 is still available
+    updatedState.resources[3].holders = [1];
+    
+    // P0 wants Network Port
+    updatedState.processes[0].waiting = [3];
+    
+    // P1 wants Disk Drive
+    updatedState.processes[1].waiting = [2];
+    
+    setSystemState(updatedState);
+    addLog("DEADLOCK SCENARIO CREATED: P0 and P1 are in a circular wait");
+    
+    // Check for deadlock after a short delay to allow state update
+    setTimeout(async () => {
+      await checkForDeadlock();
+    }, 500);
+  };
+  
   return (
     <div className="realtime-simulator">
       <div className="simulator-header">
@@ -321,6 +505,13 @@ const RealTimeSystemSimulator = () => {
           </button>
           <button className="btn btn-secondary" onClick={resetSystem}>
             🔄 Reset System
+          </button>
+          <button 
+            className="btn btn-danger"
+            onClick={forceDeadlock}
+            disabled={isRunning || deadlockDetected}
+          >
+            ⚠️ Force Deadlock
           </button>
           <div className="system-time">Time: {currentTime}s</div>
         </div>
@@ -347,54 +538,60 @@ const RealTimeSystemSimulator = () => {
       <div className="simulator-content">
         <div className="processes-panel">
           <h3>System Processes</h3>
-          {systemState.processes.map(process => (
-            <motion.div 
-              key={process.id}
-              className={`process-card ${process.waiting.length > 0 ? 'waiting' : ''}`}
-              whileHover={{ scale: 1.02 }}
-            >
-              <div className="process-header">
-                <span className="process-name">P{process.id}: {process.name}</span>
-                <span className={`priority ${process.priority.toLowerCase()}`}>
-                  {process.priority}
-                </span>
-              </div>
-              
-              <div className="process-resources">
-                <div className="held-resources">
-                  <strong>Holding:</strong>
-                  {process.resources.length > 0 ? (
-                    process.resources.map(resId => (
-                      <span key={resId} className="resource-tag held">
-                        {systemState.resources[resId].name}
-                        <button 
-                          className="release-btn"
-                          onClick={() => releaseResource(process.id, resId)}
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))
-                  ) : (
-                    <span className="no-resources">None</span>
-                  )}
+          <div className="processes-grid">
+            {systemState.processes.map(process => (
+              <motion.div 
+                key={process.id}
+                className={`process-card ${process.waiting.length > 0 ? 'waiting' : ''} ${process.waiting.length > 0 && deadlockState.deadlocked ? 'deadlocked' : ''}`}
+                whileHover={{ scale: 1.02 }}
+              >
+                <div className="process-header">
+                  <span className="process-name">P{process.id}: {process.name}</span>
+                  <span className={`priority ${process.priority.toLowerCase()}`}>
+                    {process.priority}
+                  </span>
                 </div>
                 
-                <div className="waiting-resources">
-                  <strong>Waiting for:</strong>
-                  {process.waiting.length > 0 ? (
-                    process.waiting.map(resId => (
-                      <span key={resId} className="resource-tag waiting">
-                        {systemState.resources[resId].name}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="no-resources">None</span>
-                  )}
+                <div className="process-resources">
+                  <div className="resource-row">
+                    <strong>Holding:</strong>
+                    {process.resources.length > 0 ? (
+                      process.resources.map(resId => (
+                        <span key={resId} className="resource-tag held">
+                          {systemState.resources[resId].name}
+                          <button 
+                            className="release-btn"
+                            onClick={() => releaseResource(process.id, resId)}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))
+                    ) : (
+                      <span className="no-resources">None</span>
+                    )}
+                  </div>
+                  
+                  <div className="resource-row">
+                    <strong>Waiting for:</strong>
+                    {process.waiting.length > 0 ? (
+                      process.waiting.map(resId => (
+                        <span key={resId} className="resource-tag waiting">
+                          {systemState.resources[resId].name}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="no-resources">None</span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+                
+                {process.waiting.length > 0 && deadlockState.deadlocked && (
+                  <div className="deadlock-indicator">DEADLOCKED</div>
+                )}
+              </motion.div>
+            ))}
+          </div>
         </div>
 
         <div className="resources-panel">
@@ -452,6 +649,11 @@ const RealTimeSystemSimulator = () => {
           </div>
         </div>
       </div>
+      
+      <DeadlockChatbot 
+        deadlockDetected={deadlockDetected}
+        lastDeadlockCycle={lastDeadlockCycle}
+      />
     </div>
   );
 };
